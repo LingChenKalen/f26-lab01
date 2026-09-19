@@ -57,10 +57,28 @@ public class BookingService {
      * booking. Waiters who still conflict are skipped in favor of later ones; if
      * none fit, no one is promoted.
      */
-    public void cancelBooking(String bookingId) {
+    public void cancelBooking(String bookingId) { 
         store.findBooking(bookingId).ifPresent(booking -> {
+            Room room = booking.room();
             store.removeBooking(bookingId);
+            promoteFromWaitlist(room);
         });
+
+    }
+
+    private void promoteFromWaitlist(Room room) {
+        List<Booking> remaining = store.bookingsForRoom(room);
+        List<WaitlistEntry> waiters = new ArrayList<>(store.waitlistForRoom(room));
+        waiters.sort(Comparator.comparingInt(WaitlistEntry::seq));
+
+        for (WaitlistEntry waiter : waiters) {
+            boolean conflicts = remaining.stream().anyMatch(b -> b.interval().overlaps(waiter.interval()));
+            if (!conflicts) {
+                store.addBooking(new Booking("b" + nextBookingSeq++, room, waiter.user(), waiter.interval()));
+                store.removeWaitlistEntry(waiter.id());
+                return;
+            }
+        }
     }
 
     
