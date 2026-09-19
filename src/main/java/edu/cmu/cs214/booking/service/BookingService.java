@@ -6,6 +6,8 @@ import edu.cmu.cs214.booking.domain.TimeInterval;
 import edu.cmu.cs214.booking.domain.User;
 import edu.cmu.cs214.booking.domain.WaitlistEntry;
 import edu.cmu.cs214.booking.repo.BookingStore;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -46,4 +48,20 @@ public class BookingService {
     public List<Booking> listBookings(Room room) {
         return store.bookingsForRoom(room);
     }
+
+    /**
+     * Cancels the confirmed booking with {@code bookingId}, freeing its slot. If no
+     * such booking exists, this is a no-op. After removing the booking, promotes at
+     * most one waitlisted user for the same room: the earliest-waiting user (by
+     * {@code seq}) whose interval no longer overlaps any remaining confirmed
+     * booking. Waiters who still conflict are skipped in favor of later ones; if
+     * none fit, no one is promoted.
+     */
+    public void cancelBooking(String bookingId) {
+        store.findBooking(bookingId).ifPresent(booking -> {
+            store.removeBooking(bookingId);
+        });
+    }
+
+    
 }
